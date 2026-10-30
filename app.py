@@ -13,13 +13,17 @@ from nlp_utils import (calculate_score, generate_quiz_questions, wordnet_status,
                        get_definitions, get_synonyms, get_antonyms, get_examples)
 from quiz_bank import syllabus_questions
 
-st.set_page_config(page_title="LexiQuest | NLP Quiz", page_icon="📘", layout="centered")
+st.set_page_config(page_title="LexiQuest | NLP Quiz", page_icon="📘", layout="centered", initial_sidebar_state="auto")
 st.html("<style>" + Path(__file__).with_name("ui.css").read_text(encoding="utf-8") + "</style>")
 PAGES = ["Take a Quiz", "Study & Revise", "Syllabus", "Word Explorer", "My Results"]
 
 
 def navigate(page):
     st.session_state["page"] = page
+
+
+def navigate_mobile():
+    navigate(st.session_state["mobile_page"])
 
 
 def begin_quiz(questions, title):
@@ -35,9 +39,9 @@ def show_quiz():
     if not active:
         with st.container(border=True):
             st.subheader("Start a quiz")
-            kind = st.selectbox("Quiz type", ["NLP syllabus", "WordNet synonyms", "WordNet antonyms"])
+            kind = st.selectbox("Quiz type", ["NLP syllabus", "WordNet synonyms", "WordNet antonyms"], key="quiz_type")
             if kind == "NLP syllabus":
-                module = st.selectbox("Module", ["All modules", *[item["module"] for item in SYLLABUS]])
+                module = st.selectbox("Module", ["All modules", *[item["module"] for item in SYLLABUS]], key="quiz_module")
                 available = sum(len(item["topics"]) for item in SYLLABUS if module == "All modules" or item["module"] == module)
                 count = st.slider("Number of questions", 1, available, min(5, available))
                 st.caption(f"{available} original questions available, aligned with your seventh-semester syllabus.")
@@ -120,9 +124,9 @@ def show_quiz():
 def show_study():
     st.title("Study & Revise")
     st.caption("Pick a topic for a simple explanation, revision notes or an exam answer.")
-    module = st.selectbox("Module", [item["module"] for item in SYLLABUS])
+    module = st.selectbox("Module", [item["module"] for item in SYLLABUS], key="study_module")
     item = next(item for item in SYLLABUS if item["module"] == module)
-    topic = st.selectbox("Topic", item["topics"])
+    topic = st.selectbox("Topic", item["topics"], key="study_topic")
     guide = TOPIC_GUIDES[topic]
     st.subheader(topic)
     learn, revise, exam = st.tabs(["Learn", "Quick revision", "Exam answers"])
@@ -210,11 +214,20 @@ def show_results():
     left, right = st.columns(2)
     left.metric("Quizzes completed", len(history))
     right.metric("Best result", f"{max(row['Percentage'] for row in history)}%")
-    st.dataframe(history, hide_index=True, width="stretch")
+    st.subheader("Completed quizzes")
+    for index, result in reversed(list(enumerate(history, 1))):
+        with st.container(border=True):
+            st.markdown(f"**Attempt {index} · {result['Quiz']}**")
+            st.write(f"{result['Score']}/{result['Questions']} correct · {result['Percentage']}%")
 
 
 def main():
     st.session_state.setdefault("page", "Take a Quiz")
+    # Keep both navigation surfaces synchronized. CSS shows this compact menu
+    # only on narrow screens, without relying on detecting a browser user agent.
+    st.session_state["mobile_page"] = st.session_state["page"]
+    with st.container(key="mobile_navigation"):
+        st.selectbox("LexiQuest · Menu", PAGES, key="mobile_page", on_change=navigate_mobile)
     with st.sidebar:
         st.title("LexiQuest")
         st.caption("NLP quizzes made simple")

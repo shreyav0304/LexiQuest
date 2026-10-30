@@ -41,6 +41,11 @@ Results last only for the current Streamlit session. No account, database, API
 key, trained model or LLM is required. WordNet coverage varies; the app reports
 missing entries or unavailable corpus data rather than inventing results.
 
+The layout adapts to narrow phones, tablets and desktop screens. On smaller
+screens, use the **LexiQuest · Menu** selector above the page. Answer options
+wrap, controls have touch-friendly targets, paired panels stack, and results
+use cards instead of a wide table. The desktop sidebar remains available.
+
 ## Tests
 
 ```powershell

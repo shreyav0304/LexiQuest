@@ -23,6 +23,19 @@ def test_navigation(page):
     assert not ui.exception
 
 
+def test_compact_menu_stays_synchronized_with_desktop_navigation():
+    ui = app()
+    ui.selectbox(key="mobile_page").select("Study & Revise").run()
+    assert ui.session_state["page"] == "Study & Revise"
+    assert ui.tabs
+    ui.sidebar.button(key="nav_My Results").click().run()
+    assert ui.selectbox(key="mobile_page").value == "My Results"
+    ui.selectbox(key="mobile_page").select("Take a Quiz").run()
+    button(ui, "Start quiz").click().run()
+    assert ui.radio
+    assert not ui.exception
+
+
 def test_incomplete_attempt_then_score_review_retry_and_history():
     ui = app()
     button(ui, "Start quiz").click().run()
@@ -46,7 +59,7 @@ def test_incomplete_attempt_then_score_review_retry_and_history():
     button(ui, "Submit answers").click().run()
     assert ui.session_state["last_score"] == 1
     button(ui, "New quiz").click().run()
-    assert ui.selectbox[0].value == "NLP syllabus"
+    assert ui.selectbox(key="quiz_type").value == "NLP syllabus"
     ui.sidebar.button(key="nav_My Results").click().run()
     assert len(ui.session_state["history"]) == 2
     assert not ui.exception
@@ -54,7 +67,7 @@ def test_incomplete_attempt_then_score_review_retry_and_history():
 
 def test_module_five_selection_and_change_quiz():
     ui = app()
-    ui.selectbox[1].select("Module 5 Large Language Models").run()
+    ui.selectbox(key="quiz_module").select("Module 5 Large Language Models").run()
     button(ui, "Start quiz").click().run()
     assert len(ui.radio) == 4
     assert all("Large Language Models" in q["topic"] or q["topic"] == "Sampling for LLM Generation" for q in ui.session_state["active_quiz"]["questions"])
@@ -71,7 +84,7 @@ def test_wordnet_modes(monkeypatch, kind):
         {"question": mode, "options": ["correct", "wrong"], "answer": "correct"}
     ])
     ui = app()
-    ui.selectbox[0].select(kind).run()
+    ui.selectbox(key="quiz_type").select(kind).run()
     button(ui, "Start quiz").click().run()
     ui.radio[0].set_value("correct")
     button(ui, "Submit answers").click().run()
@@ -85,7 +98,7 @@ def test_missing_wordnet_is_actionable(monkeypatch):
     import nlp_utils
     monkeypatch.setattr(nlp_utils, "wordnet_status", lambda: (False, "Run python setup_nltk.py"))
     ui = app()
-    ui.selectbox[0].select("WordNet synonyms").run()
+    ui.selectbox(key="quiz_type").select("WordNet synonyms").run()
     button(ui, "Start quiz").click().run()
     assert "setup_nltk.py" in ui.error[0].value
     assert not ui.exception
@@ -98,8 +111,8 @@ def test_study_syllabus_and_cached_metadata(monkeypatch):
     ui.sidebar.button(key="nav_Study & Revise").click().run()
     assert [tab.label for tab in ui.tabs] == ["Learn", "Quick revision", "Exam answers"]
     for module in content.SYLLABUS:
-        ui.selectbox[0].select(module["module"]).run()
-        ui.selectbox[1].select(module["topics"][-1]).run()
+        ui.selectbox(key="study_module").select(module["module"]).run()
+        ui.selectbox(key="study_topic").select(module["topics"][-1]).run()
         assert not ui.exception
     ui.sidebar.button(key="nav_Syllabus").click().run()
     assert len(ui.expander) == 6

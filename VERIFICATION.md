@@ -30,7 +30,7 @@ to describe the simplified application.
 
 Command: `.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider`.
 
-Final result: **29 passed in 19.99 seconds**, process exit code 0. Tests for the
+Latest result: **30 passed in 8.38 seconds**. Tests for the
 removed dashboard were replaced with tests for the new quiz workflow.
 
 Coverage includes:
@@ -56,3 +56,18 @@ final layout was performed. Structural question-bank tests do not independently
 certify the wording of every educational statement. Windows reports a temporary
 directory cleanup permission error after successful test completion; assertion
 results and process exit status are recorded separately.
+
+## Responsive layout update
+
+Added phone/tablet breakpoints at 360, 768 and 1024 CSS pixels, a compact menu
+below 768 pixels synchronized with desktop navigation, wrapping answer text,
+44-pixel minimum interactive targets, stacked paired columns, safe-area padding
+and 16-pixel mobile input text. Results now use readable cards rather than a wide
+table. The default sidebar uses Streamlit's auto-collapse behaviour.
+
+Existing tests were updated to select controls by stable keys; a regression test
+checks compact-menu navigation and synchronization with desktop navigation.
+AppTest cannot validate viewport geometry. A live browser window was discovered,
+but the automation returned unavailable input geometry and a screenshot from a
+different foreground window, so live responsive visual inspection could not be
+completed reliably. No claim of testing on every physical device is made.
