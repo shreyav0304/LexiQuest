@@ -1,6 +1,19 @@
 import random
+import pytest
 from content import SYLLABUS, TOPIC_GUIDES
 from quiz_bank import syllabus_questions
+from quiz_bank import result_feedback
+
+
+@pytest.mark.parametrize("score,total,expected", [
+    (5, 5, "Perfect score"), (4, 5, "Great work"),
+    (3, 5, "Nice effort"), (1, 5, "chance to learn"),
+    (0, 5, "chance to learn"), (0, 0, "chance to learn"),
+])
+def test_result_encouragement(score, total, expected):
+    title, message, icon = result_feedback(score, total)
+    assert expected in title
+    assert message and icon
 
 
 def test_all_topics_have_structurally_complete_mcqs():

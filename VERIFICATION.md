@@ -30,7 +30,7 @@ to describe the simplified application.
 
 Command: `.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider`.
 
-Latest result: **35 passed in 7.90 seconds**. Tests for the
+Latest result: **41 passed in 8.05 seconds**. Tests for the
 removed dashboard were replaced with tests for the new quiz workflow.
 
 Coverage includes:
@@ -121,3 +121,12 @@ data. This is an application-logic check, not an offline browser test. The batch
 launcher was not launched interactively. Initial dependencies and dictionary data
 still require preparation before disconnecting. The hosted Streamlit URL requires
 internet; no offline Android/iOS application or service worker is provided.
+
+## Encouraging result pop-up
+
+Added score-based native toast notifications for perfect scores, scores at least
+80%, scores at least 50%, and lower scores. Messages are encouraging and include
+a next step. A pending-event flag displays the toast once after a completed
+submission, without repeating it on reruns or revisiting results. The result card
+keeps the same message visible after the toast disappears. Tests cover score
+boundaries and verify one toast on submission with none on the next rerun.

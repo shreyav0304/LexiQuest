@@ -49,7 +49,9 @@ def test_incomplete_attempt_then_score_review_retry_and_history():
     button(ui, "Submit answers").click().run()
     assert ui.session_state["last_score"] == len(questions) - 1
     assert len(ui.session_state["history"]) == 1
+    assert len(ui.get("toast")) == 1
     ui.run()
+    assert not ui.get("toast")
     assert len(ui.session_state["history"]) == 1
     assert any(question["explanation"] in item.value for question in questions for item in ui.markdown)
     button(ui, "Retry incorrect").click().run()

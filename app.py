@@ -11,7 +11,7 @@ if not all(hasattr(course_content, name) for name in ("COURSE", "TEXTBOOKS")):
 from content import COURSE, TEXTBOOKS, SYLLABUS, TOPIC_GUIDES
 from nlp_utils import (calculate_score, generate_quiz_questions, wordnet_status,
                        get_definitions, get_synonyms, get_antonyms, get_examples)
-from quiz_bank import syllabus_questions
+from quiz_bank import syllabus_questions, result_feedback
 from wordnet_setup import install_wordnet, register_wordnet_path
 
 register_wordnet_path()
@@ -49,6 +49,7 @@ def begin_quiz(questions, title):
     st.session_state["attempt_id"] = st.session_state.get("attempt_id", 0) + 1
     st.session_state["active_quiz"] = {"questions": questions, "title": title}
     st.session_state["submitted"] = False
+    st.session_state.pop("result_popup_pending", None)
 
 
 def show_quiz():
@@ -112,6 +113,7 @@ def show_quiz():
             else:
                 score = calculate_score(questions, answers)
                 st.session_state.update(submitted=True, last_answers=answers, last_score=score)
+                st.session_state["result_popup_pending"] = True
                 st.session_state.setdefault("history", []).append({
                     "Quiz": active["title"], "Score": score, "Questions": len(questions),
                     "Percentage": round(100 * score / len(questions)),
@@ -120,7 +122,10 @@ def show_quiz():
         return
     answers = st.session_state["last_answers"]
     score = st.session_state["last_score"]
-    st.html(f'<div class="score-card"><div><div class="card-kicker">QUIZ COMPLETE</div><div class="score-title">Every attempt is progress.</div><div class="score-note">Review your answers below and keep building your understanding.</div></div><div class="score-circle">{score}<span>of {len(questions)}</span></div></div>')
+    title, encouragement, icon = result_feedback(score, len(questions))
+    if st.session_state.pop("result_popup_pending", False):
+        st.toast(f"{title} {score}/{len(questions)}. {encouragement}", icon=icon, duration="long")
+    st.html(f'<div class="score-card"><div><div class="card-kicker">QUIZ COMPLETE</div><div class="score-title">{title}</div><div class="score-note">{encouragement}</div></div><div class="score-circle">{score}<span>of {len(questions)}</span></div></div>')
     st.success(f"Your score: {score}/{len(questions)} ({score / len(questions):.0%})")
     st.progress(score / len(questions))
     st.subheader("Review your answers")

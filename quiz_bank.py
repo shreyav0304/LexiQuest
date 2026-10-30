@@ -70,3 +70,15 @@ def syllabus_questions(module=None, count=5, rng=None):
                           "answer": practice["answer"], "explanation": practice["explanation"]})
     randomizer.shuffle(questions)
     return questions[:max(0, count)]
+
+
+def result_feedback(score, total):
+    """Encouraging feedback based on the exact score, not rounded percentages."""
+    ratio = score / total if total else 0
+    if total and score == total:
+        return "Hurray! Perfect score!", "You got every question right. Ready for another challenge?", "🎉"
+    if ratio >= 0.8:
+        return "Hurray! Great work!", "You're doing really well. Review the few you missed and keep going.", "🌟"
+    if ratio >= 0.5:
+        return "Nice effort! Keep building.", "You've got a good start. A quick review can turn those mistakes into marks.", "💪"
+    return "Oops! A chance to learn.", "This score is a starting point. Read the explanations and try again — you can improve!", "🌱"
