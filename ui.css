@@ -1,0 +1,17 @@
+/* Small layout using native controls, without radio DOM overrides. */
+.stMainBlockContainer { max-width: 920px; padding-top: 3.5rem; padding-bottom: 3rem; }
+[data-testid="stSidebar"] { border-right: 1px solid #e3e5ed; }
+[data-testid="stSidebarUserContent"] { padding-top: 1.5rem !important; }
+h1, h2, h3 { letter-spacing: -.025em; }
+p { line-height: 1.65; }
+.st-key-simple_nav button { min-height: 42px; text-align: left; }
+.st-key-simple_nav button > div { width: 100%; justify-content: flex-start; }
+[data-testid="stForm"] { padding: 1.25rem; }
+[data-testid="stRadio"] label { padding: .25rem 0; }
+[data-testid="stButton"] button { transition: background-color .15s ease; }
+@media (max-width: 640px) {
+    .stMainBlockContainer { padding-left: 1rem; padding-right: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+}
