@@ -27,7 +27,31 @@ The server needs internet access for this download; if it fails, retry the
 button. Setup may be needed again if the hosting service replaces the server.
 Corpus files are kept in ignored `nltk_data/`, not committed to GitHub.
 
-## How to use
+## Offline use
+
+After the one-time dependency installation and WordNet setup above, double-click
+**start_offline.bat** and open `http://localhost:8501` on this computer. You can
+disconnect from the internet: syllabus quizzes, study material, Word Explorer,
+vocabulary quizzes and session results use local files. Keep the launcher window
+open while using the app. It does not download anything or install packages.
+
+Verify the offline data and quiz logic with:
+
+```powershell
+.\.venv\Scripts\python.exe offline_check.py
+```
+
+This check blocks outgoing socket connections while testing all syllabus
+questions, scoring, study-guide availability, WordNet lookups and both vocabulary
+quiz generators. It checks logic, not browser rendering.
+
+The hosted `.streamlit.app` link requires internet; installing that website as a
+browser shortcut does not make its Python server available offline. This launcher
+supports local Windows use with Python installed. It is not a standalone offline
+Android/iOS application. On another computer, install dependencies once and copy
+or prepare its `nltk_data/` corpus before going offline; the corpus is not in Git.
+
+## Quiz workflow
 
 1. **Take a Quiz:** choose NLP syllabus, WordNet synonyms or WordNet antonyms.
 2. For syllabus quizzes, choose one module or all modules and the question count.

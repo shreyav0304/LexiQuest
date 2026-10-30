@@ -106,3 +106,18 @@ download completed with `(True, 'WordNet is ready.')`. Tests also simulate setup
 success/failure, ensure quizzes enable after setup, and check that an existing
 corpus is reused without downloading again. Live hosted installation has not been
 performed through the user's browser.
+
+## Local offline use
+
+Added start_offline.bat, a local-only Windows launcher using the existing virtual
+environment. It binds Streamlit to 127.0.0.1, performs no package installation and
+disables usage telemetry. The setup script now places WordNet in project-local
+nltk_data/ and reports a failing exit status if preparation fails.
+
+Executed offline_check.py with outgoing socket connections blocked: all 39
+syllabus questions, perfect-answer scoring, 39 study guides, WordNet definitions,
+synonyms, antonyms and both vocabulary generators passed using project-local
+data. This is an application-logic check, not an offline browser test. The batch
+launcher was not launched interactively. Initial dependencies and dictionary data
+still require preparation before disconnecting. The hosted Streamlit URL requires
+internet; no offline Android/iOS application or service worker is provided.
