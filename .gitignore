@@ -7,6 +7,7 @@ __pycache__/
 .streamlit/*
 !.streamlit/config.toml
 .test-tmp/
+nltk_data/
 .env
 *.log
 

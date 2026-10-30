@@ -12,6 +12,9 @@ from content import COURSE, TEXTBOOKS, SYLLABUS, TOPIC_GUIDES
 from nlp_utils import (calculate_score, generate_quiz_questions, wordnet_status,
                        get_definitions, get_synonyms, get_antonyms, get_examples)
 from quiz_bank import syllabus_questions
+from wordnet_setup import install_wordnet, register_wordnet_path
+
+register_wordnet_path()
 
 st.set_page_config(page_title="LexiQuest | NLP Quiz", page_icon="📘", layout="centered", initial_sidebar_state="auto")
 st.html("<style>" + Path(__file__).with_name("ui.css").read_text(encoding="utf-8") + "</style>")
@@ -24,6 +27,22 @@ def navigate(page):
 
 def navigate_mobile():
     navigate(st.session_state["mobile_page"])
+
+
+def wordnet_ready():
+    """Offer cloud-compatible setup instead of a terminal-only instruction."""
+    ready, _ = wordnet_status()
+    if ready:
+        return True
+    st.info("WordNet needs a one-time download on this server. The NLP syllabus quiz works without it.")
+    if st.button("Set up WordNet", key="setup_wordnet", type="primary"):
+        with st.spinner("Downloading the English WordNet dictionary..."):
+            success, message = install_wordnet()
+        if success:
+            st.rerun()
+        else:
+            st.error(message)
+    return False
 
 
 def begin_quiz(questions, title):
@@ -46,6 +65,7 @@ def show_quiz():
             type_column, module_column = st.columns(2, gap="medium")
             kind = type_column.selectbox("Quiz type", ["NLP syllabus", "WordNet synonyms", "WordNet antonyms"], key="quiz_type")
             if kind == "NLP syllabus":
+                ready = True
                 module = module_column.selectbox("Module", ["All modules", *[item["module"] for item in SYLLABUS]], key="quiz_module")
                 available = sum(len(item["topics"]) for item in SYLLABUS if module == "All modules" or item["module"] == module)
                 count = st.slider("Number of questions", 1, available, min(5, available))
@@ -53,15 +73,12 @@ def show_quiz():
             else:
                 count = st.select_slider("Number of questions", options=[5, 10, 15], value=5)
                 st.caption("Vocabulary practice using the local WordNet database.")
-            if st.button("Start quiz", type="primary", width="stretch", icon=":material/arrow_forward:"):
+                ready = wordnet_ready()
+            if st.button("Start quiz", type="primary", width="stretch", icon=":material/arrow_forward:", disabled=not ready):
                 if kind == "NLP syllabus":
                     questions = syllabus_questions(None if module == "All modules" else module, count)
                     title = module
                 else:
-                    ready, message = wordnet_status()
-                    if not ready:
-                        st.error(message)
-                        return
                     with st.spinner("Preparing your WordNet questions..."):
                         questions = generate_quiz_questions("synonym" if kind == "WordNet synonyms" else "antonym", count)
                     title = kind
@@ -185,9 +202,7 @@ def show_explorer():
     word = st.text_input("Enter an English word", placeholder="For example: happy").strip().lower()
     if not word:
         return
-    ready, message = wordnet_status()
-    if not ready:
-        st.error(message)
+    if not wordnet_ready():
         return
     definitions = get_definitions(word)
     if not definitions:

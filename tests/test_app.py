@@ -99,8 +99,38 @@ def test_missing_wordnet_is_actionable(monkeypatch):
     monkeypatch.setattr(nlp_utils, "wordnet_status", lambda: (False, "Run python setup_nltk.py"))
     ui = app()
     ui.selectbox(key="quiz_type").select("WordNet synonyms").run()
-    button(ui, "Start quiz").click().run()
-    assert "setup_nltk.py" in ui.error[0].value
+    assert button(ui, "Start quiz").disabled
+    assert button(ui, "Set up WordNet")
+    assert "one-time download" in ui.info[0].value
+    assert not ui.exception
+
+
+def test_hosted_setup_failure_is_retryable(monkeypatch):
+    import nlp_utils
+    import wordnet_setup
+    monkeypatch.setattr(nlp_utils, "wordnet_status", lambda: (False, "Missing"))
+    monkeypatch.setattr(wordnet_setup, "install_wordnet", lambda: (False, "Please retry the download."))
+    ui = app()
+    ui.selectbox(key="quiz_type").select("WordNet synonyms").run()
+    button(ui, "Set up WordNet").click().run()
+    assert "retry" in ui.error[0].value
+    assert button(ui, "Set up WordNet")
+    assert not ui.exception
+
+
+def test_hosted_setup_success_enables_quiz(monkeypatch):
+    import nlp_utils
+    import wordnet_setup
+    ready = [False]
+    monkeypatch.setattr(nlp_utils, "wordnet_status", lambda: (ready[0], "Status"))
+    def install():
+        ready[0] = True
+        return True, "Ready"
+    monkeypatch.setattr(wordnet_setup, "install_wordnet", install)
+    ui = app()
+    ui.selectbox(key="quiz_type").select("WordNet synonyms").run()
+    button(ui, "Set up WordNet").click().run()
+    assert not button(ui, "Start quiz").disabled
     assert not ui.exception
 
 

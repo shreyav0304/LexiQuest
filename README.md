@@ -20,6 +20,13 @@ If an older copy is running, stop it with Ctrl+C before running the last command
 `setup_nltk.py` needs internet once for the WordNet corpora. The syllabus quiz
 works without WordNet; the vocabulary quiz and explorer need those corpora.
 
+For a hosted app, open a WordNet quiz or enter a word in Word Explorer and click
+**Set up WordNet** if prompted. The app downloads the English dictionary on the
+server and verifies it before enabling quizzes. No cloud terminal is needed.
+The server needs internet access for this download; if it fails, retry the
+button. Setup may be needed again if the hosting service replaces the server.
+Corpus files are kept in ignored `nltk_data/`, not committed to GitHub.
+
 ## How to use
 
 1. **Take a Quiz:** choose NLP syllabus, WordNet synonyms or WordNet antonyms.

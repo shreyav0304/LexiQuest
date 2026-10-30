@@ -30,7 +30,7 @@ to describe the simplified application.
 
 Command: `.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider`.
 
-Latest result: **30 passed in 7.70 seconds**. Tests for the
+Latest result: **35 passed in 7.90 seconds**. Tests for the
 removed dashboard were replaced with tests for the new quiz workflow.
 
 Coverage includes:
@@ -90,3 +90,19 @@ quiz labels, confirming that deployment was current. The user still found it too
 similar, so the design was changed to a dark navy sidebar, teal controls, compact
 dark quiz banner, mint highlights and paired setup fields. A visible "QUIZ
 EDITION · TEAL" sidebar label distinguishes this release from earlier versions.
+
+## Hosted WordNet setup fix
+
+The supplied screenshot shows a missing corpus on the hosted server. Added an
+explicit Set up WordNet button shared by vocabulary quiz setup and Word Explorer.
+It downloads only English WordNet into ignored server-local `nltk_data/`, adds
+that path to NLTK discovery, and verifies a real lookup. No download runs at app
+startup. Missing-data messages no longer require a terminal on the hosted app.
+Failure remains retryable; the syllabus quiz remains available without WordNet.
+
+The real installer was tested with NLTK restricted to the project data directory:
+the sandbox proxy blocked the first network attempt, and the approved unsandboxed
+download completed with `(True, 'WordNet is ready.')`. Tests also simulate setup
+success/failure, ensure quizzes enable after setup, and check that an existing
+corpus is reused without downloading again. Live hosted installation has not been
+performed through the user's browser.
