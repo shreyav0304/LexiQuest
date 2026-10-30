@@ -33,11 +33,14 @@ def begin_quiz(questions, title):
 
 
 def show_quiz():
+    st.html('<div class="page-kicker">A LITTLE PRACTICE. A LOT MORE CONFIDENCE.</div>')
     st.title("NLP Quiz")
     st.caption("Choose a quiz. Test yourself. Learn from every answer.")
     active = st.session_state.get("active_quiz")
     if not active:
-        with st.container(border=True):
+        st.html('<div class="quiz-highlights"><span>5 syllabus modules</span><span>39 original questions</span><span>Instant explanations</span></div>')
+        with st.container(border=True, key="quiz_setup"):
+            st.html('<div class="card-kicker">YOUR NEXT CHALLENGE</div>')
             st.subheader("Start a quiz")
             kind = st.selectbox("Quiz type", ["NLP syllabus", "WordNet synonyms", "WordNet antonyms"], key="quiz_type")
             if kind == "NLP syllabus":
@@ -48,7 +51,7 @@ def show_quiz():
             else:
                 count = st.select_slider("Number of questions", options=[5, 10, 15], value=5)
                 st.caption("Vocabulary practice using the local WordNet database.")
-            if st.button("Start quiz", type="primary", width="stretch"):
+            if st.button("Start quiz", type="primary", width="stretch", icon=":material/arrow_forward:"):
                 if kind == "NLP syllabus":
                     questions = syllabus_questions(None if module == "All modules" else module, count)
                     title = module
@@ -77,11 +80,11 @@ def show_quiz():
         with st.form(f"quiz_form_{attempt}"):
             answers = {}
             for index, question in enumerate(questions):
-                st.markdown(f"#### {index + 1}. {question['question']}")
-                answers[index] = st.radio("Choose one answer", question["options"], index=None,
-                                          key=f"answer_{attempt}_{index}", label_visibility="collapsed")
-                if index < len(questions) - 1:
-                    st.divider()
+                with st.container(border=True, key=f"question_card_{index}"):
+                    st.caption(f"QUESTION {index + 1:02d} OF {len(questions):02d}")
+                    st.markdown(f"#### {question['question']}")
+                    answers[index] = st.radio("Choose one answer", question["options"], index=None,
+                                              key=f"answer_{attempt}_{index}", label_visibility="collapsed")
             submitted = st.form_submit_button("Submit answers", type="primary", width="stretch")
         if submitted:
             if any(answer is None for answer in answers.values()):
@@ -98,6 +101,7 @@ def show_quiz():
         return
     answers = st.session_state["last_answers"]
     score = st.session_state["last_score"]
+    st.html(f'<div class="score-card"><div><div class="card-kicker">QUIZ COMPLETE</div><div class="score-title">Every attempt is progress.</div><div class="score-note">Review your answers below and keep building your understanding.</div></div><div class="score-circle">{score}<span>of {len(questions)}</span></div></div>')
     st.success(f"Your score: {score}/{len(questions)} ({score / len(questions):.0%})")
     st.progress(score / len(questions))
     st.subheader("Review your answers")
@@ -229,11 +233,13 @@ def main():
     with st.container(key="mobile_navigation"):
         st.selectbox("LexiQuest · Menu", PAGES, key="mobile_page", on_change=navigate_mobile)
     with st.sidebar:
-        st.title("LexiQuest")
-        st.caption("NLP quizzes made simple")
+        st.html('<div class="app-brand"><div class="brand-mark">L</div><div><div class="brand-name">LexiQuest</div><div class="brand-tagline">A curious mind starts here.</div></div></div>')
+        st.caption("YOUR WORKSPACE")
         with st.container(key="simple_nav", gap="small"):
-            for page in PAGES:
+            icons = ["quiz", "menu_book", "format_list_bulleted", "search", "bar_chart"]
+            for page, icon in zip(PAGES, icons):
                 st.button(page, key=f"nav_{page}", width="stretch",
+                          icon=f":material/{icon}:",
                           type="primary" if st.session_state["page"] == page else "secondary",
                           on_click=navigate, args=(page,))
         st.divider()

@@ -30,7 +30,7 @@ to describe the simplified application.
 
 Command: `.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider`.
 
-Latest result: **30 passed in 8.38 seconds**. Tests for the
+Latest result: **30 passed in 7.70 seconds**. Tests for the
 removed dashboard were replaced with tests for the new quiz workflow.
 
 Coverage includes:
@@ -71,3 +71,13 @@ AppTest cannot validate viewport geometry. A live browser window was discovered,
 but the automation returned unavailable input geometry and a screenshot from a
 different foreground window, so live responsive visual inspection could not be
 completed reliably. No claim of testing on every physical device is made.
+
+## Visual polish
+
+Added a compact brand mark and icon navigation, a white quiz setup card with
+small course highlights, individual question cards, bordered answer choices with
+hover/selection styling, and a score summary card. Refined the violet palette,
+typography, spacing, metrics and expanders while preserving the mobile menu,
+wrapping text, touch-target sizes and reduced-motion rules. Existing interaction
+and content tests pass. This update has not received live browser visual QA;
+the earlier browser automation limitations still apply.
