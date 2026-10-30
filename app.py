@@ -33,18 +33,20 @@ def begin_quiz(questions, title):
 
 
 def show_quiz():
-    st.html('<div class="page-kicker">A LITTLE PRACTICE. A LOT MORE CONFIDENCE.</div>')
-    st.title("NLP Quiz")
-    st.caption("Choose a quiz. Test yourself. Learn from every answer.")
     active = st.session_state.get("active_quiz")
+    if active:
+        st.title("Your quiz results" if st.session_state.get("submitted") else "Let's put it into practice.")
+    else:
+        st.html('<section class="quiz-banner"><div class="banner-kicker">LEXIQUEST / NLP PRACTICE</div><h1>A little practice.<br>A lot more confidence.</h1><p>Your syllabus. Clear questions. A smarter way to revise.</p><div class="banner-line"><span>01 &nbsp; Choose</span><span>02 &nbsp; Challenge yourself</span><span>03 &nbsp; Learn & improve</span></div></section>')
     if not active:
         st.html('<div class="quiz-highlights"><span>5 syllabus modules</span><span>39 original questions</span><span>Instant explanations</span></div>')
         with st.container(border=True, key="quiz_setup"):
             st.html('<div class="card-kicker">YOUR NEXT CHALLENGE</div>')
             st.subheader("Start a quiz")
-            kind = st.selectbox("Quiz type", ["NLP syllabus", "WordNet synonyms", "WordNet antonyms"], key="quiz_type")
+            type_column, module_column = st.columns(2, gap="medium")
+            kind = type_column.selectbox("Quiz type", ["NLP syllabus", "WordNet synonyms", "WordNet antonyms"], key="quiz_type")
             if kind == "NLP syllabus":
-                module = st.selectbox("Module", ["All modules", *[item["module"] for item in SYLLABUS]], key="quiz_module")
+                module = module_column.selectbox("Module", ["All modules", *[item["module"] for item in SYLLABUS]], key="quiz_module")
                 available = sum(len(item["topics"]) for item in SYLLABUS if module == "All modules" or item["module"] == module)
                 count = st.slider("Number of questions", 1, available, min(5, available))
                 st.caption(f"{available} original questions available, aligned with your seventh-semester syllabus.")
@@ -244,6 +246,7 @@ def main():
                           on_click=navigate, args=(page,))
         st.divider()
         st.caption("AI401 · Semester VII")
+        st.caption("QUIZ EDITION · TEAL")
     {"Take a Quiz": show_quiz, "Study & Revise": show_study, "Syllabus": show_syllabus,
      "Word Explorer": show_explorer, "My Results": show_results}[st.session_state["page"]]()
 

@@ -81,3 +81,12 @@ typography, spacing, metrics and expanders while preserving the mobile menu,
 wrapping text, touch-target sizes and reduced-motion rules. Existing interaction
 and content tests pass. This update has not received live browser visual QA;
 the earlier browser automation limitations still apply.
+
+## Teal quiz edition
+
+The deployed page was inspected through Windows accessibility and a screenshot
+after raising the Edge window. It contained the previous update's new brand and
+quiz labels, confirming that deployment was current. The user still found it too
+similar, so the design was changed to a dark navy sidebar, teal controls, compact
+dark quiz banner, mint highlights and paired setup fields. A visible "QUIZ
+EDITION · TEAL" sidebar label distinguishes this release from earlier versions.
