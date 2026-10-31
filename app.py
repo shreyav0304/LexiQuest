@@ -11,7 +11,10 @@ if not all(hasattr(course_content, name) for name in ("COURSE", "TEXTBOOKS")):
 from content import COURSE, TEXTBOOKS, SYLLABUS, TOPIC_GUIDES
 from nlp_utils import (calculate_score, generate_quiz_questions, wordnet_status,
                        get_definitions, get_synonyms, get_antonyms, get_examples)
-from quiz_bank import syllabus_questions, result_feedback
+import quiz_bank as quiz_data
+if not hasattr(quiz_data, "question_count"):
+    importlib.reload(quiz_data)
+from quiz_bank import syllabus_questions, result_feedback, question_count
 from wordnet_setup import install_wordnet, register_wordnet_path
 
 register_wordnet_path()
@@ -45,6 +48,13 @@ def wordnet_ready():
     return False
 
 
+@st.cache_data(show_spinner=False, max_entries=256)
+def word_details(word):
+    """Cache serializable lookup results; only called after corpus readiness."""
+    return {"definitions": get_definitions(word), "synonyms": get_synonyms(word),
+            "antonyms": get_antonyms(word), "examples": get_examples(word)}
+
+
 def begin_quiz(questions, title):
     st.session_state["attempt_id"] = st.session_state.get("attempt_id", 0) + 1
     st.session_state["active_quiz"] = {"questions": questions, "title": title}
@@ -59,7 +69,7 @@ def show_quiz():
     else:
         st.html('<section class="quiz-banner"><div class="banner-kicker">LEXIQUEST / NLP PRACTICE</div><h1>A little practice.<br>A lot more confidence.</h1><p>Your syllabus. Clear questions. A smarter way to revise.</p><div class="banner-line"><span>01 &nbsp; Choose</span><span>02 &nbsp; Challenge yourself</span><span>03 &nbsp; Learn & improve</span></div></section>')
     if not active:
-        st.html('<div class="quiz-highlights"><span>5 syllabus modules</span><span>39 original questions</span><span>Instant explanations</span></div>')
+        st.html(f'<div class="quiz-highlights"><span>5 syllabus modules</span><span>{question_count()} original questions</span><span>Instant explanations</span></div>')
         with st.container(border=True, key="quiz_setup"):
             st.html('<div class="card-kicker">YOUR NEXT CHALLENGE</div>')
             st.subheader("Start a quiz")
@@ -68,8 +78,8 @@ def show_quiz():
             if kind == "NLP syllabus":
                 ready = True
                 module = module_column.selectbox("Module", ["All modules", *[item["module"] for item in SYLLABUS]], key="quiz_module")
-                available = sum(len(item["topics"]) for item in SYLLABUS if module == "All modules" or item["module"] == module)
-                count = st.slider("Number of questions", 1, available, min(5, available))
+                available = question_count(None if module == "All modules" else module)
+                count = st.slider("Number of questions", 1, min(20, available), min(5, available))
                 st.caption(f"{available} original questions available, aligned with your seventh-semester syllabus.")
             else:
                 count = st.select_slider("Number of questions", options=[5, 10, 15], value=5)
@@ -129,17 +139,22 @@ def show_quiz():
     st.success(f"Your score: {score}/{len(questions)} ({score / len(questions):.0%})")
     st.progress(score / len(questions))
     st.subheader("Review your answers")
+    review_all = st.checkbox("Show correct answers too", value=False, key=f"review_all_{st.session_state['attempt_id']}")
     wrong = []
     for index, question in enumerate(questions):
         correct = answers[index] == question["answer"]
         if not correct:
             wrong.append(question)
+        if correct and not review_all:
+            continue
         with st.expander(f"{index + 1}. {'Correct' if correct else 'Review'} — {question['question']}", expanded=not correct):
             st.write(f"**Your answer:** {answers[index]}")
             st.write(f"**Correct answer:** {question['answer']}")
             st.write(question.get("explanation", "This relationship is recorded in WordNet. Different word senses may have different related words."))
             if question.get("topic"):
                 st.caption("Revise in Study & Revise: " + question["topic"])
+    if not wrong and not review_all:
+        st.caption("All correct! Enable 'Show correct answers too' to read the explanations.")
     retry, new = st.columns(2)
     if retry.button("Retry incorrect" if wrong else "Try again", width="stretch"):
         begin_quiz(wrong or questions, active["title"])
@@ -204,12 +219,17 @@ def show_syllabus():
 def show_explorer():
     st.title("Word Explorer")
     st.caption("Look up a word before taking a synonym or antonym quiz.")
-    word = st.text_input("Enter an English word", placeholder="For example: happy").strip().lower()
+    with st.form("word_lookup"):
+        entered = st.text_input("Enter an English word", placeholder="For example: happy")
+        if st.form_submit_button("Look up word", type="primary", width="stretch"):
+            st.session_state["explorer_word"] = " ".join(entered.strip().lower().split())
+    word = st.session_state.get("explorer_word", "")
     if not word:
         return
     if not wordnet_ready():
         return
-    definitions = get_definitions(word)
+    details = word_details(word)
+    definitions = details["definitions"]
     if not definitions:
         st.info("No WordNet entry found. Try another word.")
         return
@@ -218,11 +238,11 @@ def show_explorer():
         st.markdown(f"- {definition}")
     left, right = st.columns(2)
     left.markdown("**Synonyms**")
-    left.write(", ".join(get_synonyms(word)) or "No direct synonyms recorded.")
+    left.write(", ".join(details["synonyms"]) or "No direct synonyms recorded.")
     right.markdown("**Antonyms**")
-    right.write(", ".join(get_antonyms(word)) or "No direct antonyms recorded.")
+    right.write(", ".join(details["antonyms"]) or "No direct antonyms recorded.")
     with st.expander("Example sentences"):
-        examples = get_examples(word)
+        examples = details["examples"]
         for example in examples:
             st.write(example)
         if not examples:

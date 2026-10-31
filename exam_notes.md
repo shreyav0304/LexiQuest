@@ -4,8 +4,8 @@
 
 LexiQuest is a quiz application for the supplied seventh-semester NLP syllabus.
 Its main workflow is choosing a module, answering multiple-choice questions,
-receiving an automatic score and reviewing explanations. There are 39 original
-syllabus questions, one per topic, plus WordNet synonym and antonym quizzes.
+receiving an automatic score and reviewing explanations. There are 117 original
+syllabus questions, three per topic, plus WordNet synonym and antonym quizzes.
 Students can retry incorrect questions and view session results.
 
 Syllabus questions are selected from an original local question bank; WordNet

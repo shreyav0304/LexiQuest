@@ -6,6 +6,7 @@ These are practice questions, not official university examination questions.
 
 import random
 from content import SYLLABUS, TOPIC_GUIDES
+from extra_questions import ADDITIONAL
 
 # One application question for each of the 39 syllabus topics, in source order.
 DISTRACTORS = (
@@ -55,21 +56,53 @@ if len(TOPICS) != len(DISTRACTORS):
     raise ValueError("Each syllabus topic needs its own MCQ distractors")
 
 
+def _build_bank():
+    bank = []
+    for topic, distractors in zip(TOPICS, DISTRACTORS):
+        practice = TOPIC_GUIDES[topic]["practice_questions"][1]
+        bank.append((topic, practice["question"], practice["answer"], tuple(distractors), practice["explanation"]))
+        for question, answer, wrong, explanation in ADDITIONAL[topic]:
+            bank.append((topic, question, answer, tuple(wrong), explanation))
+    return tuple(bank)
+
+
+QUESTION_BANK = _build_bank()
+
+
+def question_count(module=None):
+    topics = {topic for item in SYLLABUS if module is None or item["module"] == module for topic in item["topics"]}
+    return sum(record[0] in topics for record in QUESTION_BANK)
+
+
 def syllabus_questions(module=None, count=5, rng=None):
-    """Return a shuffled set without repeated topics; None covers all modules."""
+    """Return unique questions; cover different topics before revisiting them."""
+    if count <= 0:
+        return []
     randomizer = rng or random.Random()
     eligible = {topic for item in SYLLABUS if module is None or item["module"] == module for topic in item["topics"]}
+    groups = {topic: [] for topic in TOPICS if topic in eligible}
+    for record in QUESTION_BANK:
+        if record[0] in groups:
+            groups[record[0]].append(record)
+    for records in groups.values():
+        randomizer.shuffle(records)
+    selected = []
+    while groups and len(selected) < count:
+        topics = list(groups)
+        randomizer.shuffle(topics)
+        for topic in topics:
+            selected.append(groups[topic].pop())
+            if not groups[topic]:
+                del groups[topic]
+            if len(selected) == count:
+                break
     questions = []
-    for topic, distractors in zip(TOPICS, DISTRACTORS):
-        if topic not in eligible:
-            continue
-        practice = TOPIC_GUIDES[topic]["practice_questions"][1]
-        options = [practice["answer"], *distractors]
+    for topic, question, answer, wrong, explanation in selected:
+        options = [answer, *wrong]
         randomizer.shuffle(options)
-        questions.append({"topic": topic, "question": practice["question"], "options": options,
-                          "answer": practice["answer"], "explanation": practice["explanation"]})
-    randomizer.shuffle(questions)
-    return questions[:max(0, count)]
+        questions.append({"topic": topic, "question": question, "options": options,
+                          "answer": answer, "explanation": explanation})
+    return questions
 
 
 def result_feedback(score, total):

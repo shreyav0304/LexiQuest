@@ -63,9 +63,11 @@ or prepare its `nltk_data/` corpus before going offline; the corpus is not in Gi
 module organization and chapter ranges. **Word Explorer** retrieves meanings,
 synonyms, antonyms and examples. **My Results** displays completed attempts.
 
-There are 39 original syllabus MCQs, one per topic, with four answer choices.
-Module question counts are 11, 12, 6, 6 and 4 respectively. Questions and options
-are shuffled. These are practice questions, not official university exam questions.
+There are 117 original syllabus MCQs, three per topic, with four answer choices.
+Module question counts are 33, 36, 18, 18 and 12 respectively. Each attempt has
+up to 20 questions to keep pages responsive. Questions and options are shuffled,
+covering different topics before revisiting them. These are practice questions,
+not official university exam questions.
 Written model answers are study material, not automatically graded responses.
 
 Results last only for the current Streamlit session. No account, database, API
@@ -93,6 +95,7 @@ review, retries, results, navigation and WordNet behaviour. See
 | --- | --- |
 | `app.py` | Five-screen Streamlit quiz interface |
 | `quiz_bank.py` | Original MCQ distractors and question selection |
+| `extra_questions.py` | 78 additional conceptual and worked-calculation MCQs |
 | `content.py` | Supplied syllabus and pure study utilities |
 | `lessons.py` | Original teaching material for all 39 topics |
 | `nlp_utils.py` | WordNet retrieval, question generation and scoring |
@@ -108,3 +111,12 @@ retry an incorrect question. Open Study & Revise to explain a topic, show its
 chapter reference in Syllabus, then demonstrate a WordNet quiz and word lookup.
 The application demonstrates quiz logic, syllabus-aligned learning and lexical
 information retrieval; it does not train a machine-learning model.
+
+## Responsiveness
+
+WordNet quizzes use a bounded common-word pool instead of loading and shuffling
+every synset. Lexical templates and word lookups are cached with bounded sizes;
+question choices still shuffle for each attempt. The first WordNet use still
+loads its corpus. Word Explorer submits a lookup explicitly and caches its
+results. Results initially show incorrect answers; enable **Show correct answers
+too** for the full review. The syllabus bank is compiled once from local data.

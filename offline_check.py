@@ -14,11 +14,11 @@ def check():
         import nltk
         nltk.data.path = [str(Path(__file__).resolve().parent / "nltk_data")]
         from content import SYLLABUS, TOPIC_GUIDES
-        from quiz_bank import syllabus_questions
+        from quiz_bank import syllabus_questions, question_count
         from nlp_utils import (wordnet_status, get_definitions, get_synonyms,
                                get_antonyms, generate_quiz_questions, calculate_score)
-        questions = syllabus_questions(count=100)
-        if len(questions) != sum(len(module["topics"]) for module in SYLLABUS):
+        questions = syllabus_questions(count=question_count())
+        if {question["topic"] for question in questions} != set(TOPIC_GUIDES):
             raise RuntimeError("Syllabus question coverage is incomplete")
         if calculate_score(questions, {i: q["answer"] for i, q in enumerate(questions)}) != len(questions):
             raise RuntimeError("Quiz scoring failed")

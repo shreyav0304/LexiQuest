@@ -109,3 +109,29 @@ def test_quiz_distractors_are_not_other_valid_relationships(corpus):
             assert "sense:" in question["question"]
             assert question["answer"] in question["explanation"]
 
+
+def test_real_quiz_path_never_scans_corpus_and_reuses_templates(monkeypatch, corpus):
+    import nlp_utils
+    calls = []
+    original_lookup = corpus.synsets
+    def lookup(word):
+        calls.append(word)
+        return original_lookup(word)
+    monkeypatch.setattr(corpus, "synsets", lookup)
+    monkeypatch.setattr(corpus, "all_synsets", lambda: (_ for _ in ()).throw(AssertionError("Full corpus scan")))
+    monkeypatch.setattr(nlp_utils, "wn", corpus)
+    monkeypatch.setattr(nlp_utils, "QUIZ_WORDS", ("happy", "glad", "sad", "bright", "shiny"))
+    monkeypatch.setattr(nlp_utils, "_real_synsets", lambda word: tuple(corpus.synsets(word)))
+    nlp_utils._real_question_pool.cache_clear()
+    try:
+        first = generate_quiz_questions("synonym", 2, corpus, random.Random(1))
+        assert first
+        pool_calls = len([word for word in calls if word != "example"])
+        second = generate_quiz_questions("synonym", 2, corpus, random.Random(2))
+        assert second
+        assert len([word for word in calls if word != "example"]) == pool_calls
+        first[0]["options"].clear()
+        assert all(len(q["options"]) >= 2 for q in second)
+    finally:
+        nlp_utils._real_question_pool.cache_clear()
+

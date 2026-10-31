@@ -23,6 +23,14 @@ def test_navigation(page):
     assert not ui.exception
 
 
+def test_cached_old_question_bank_recovers(monkeypatch):
+    import quiz_bank
+    monkeypatch.delattr(quiz_bank, "question_count")
+    ui = app()
+    assert quiz_bank.question_count() == 117
+    assert not ui.exception
+
+
 def test_compact_menu_stays_synchronized_with_desktop_navigation():
     ui = app()
     ui.selectbox(key="mobile_page").select("Study & Revise").run()
@@ -71,10 +79,37 @@ def test_module_five_selection_and_change_quiz():
     ui = app()
     ui.selectbox(key="quiz_module").select("Module 5 Large Language Models").run()
     button(ui, "Start quiz").click().run()
-    assert len(ui.radio) == 4
+    assert len(ui.radio) == 5
     assert all("Large Language Models" in q["topic"] or q["topic"] == "Sampling for LLM Generation" for q in ui.session_state["active_quiz"]["questions"])
     button(ui, "Change quiz").click().run()
     assert not ui.radio
+    assert not ui.exception
+
+
+def test_large_bank_has_short_default_attempts_and_capped_rendering():
+    ui = app()
+    ui.slider[0].set_value(20).run()
+    button(ui, "Start quiz").click().run()
+    assert len(ui.radio) == 20
+    assert not ui.exception
+
+
+def test_word_lookup_is_submitted_once_and_reused(monkeypatch):
+    import nlp_utils
+    calls = []
+    monkeypatch.setattr(nlp_utils, "wordnet_status", lambda: (True, "Ready"))
+    monkeypatch.setattr(nlp_utils, "get_definitions", lambda word: calls.append(word) or ["A unique cache test definition."])
+    monkeypatch.setattr(nlp_utils, "get_synonyms", lambda word: ["related"])
+    monkeypatch.setattr(nlp_utils, "get_antonyms", lambda word: ["opposite"])
+    monkeypatch.setattr(nlp_utils, "get_examples", lambda word: ["An example."])
+    ui = app()
+    ui.sidebar.button(key="nav_Word Explorer").click().run()
+    ui.text_input[0].set_value("cachetestword")
+    assert not calls
+    button(ui, "Look up word").click().run()
+    assert calls == ["cachetestword"]
+    ui.run()
+    assert calls == ["cachetestword"]
     assert not ui.exception
 
 

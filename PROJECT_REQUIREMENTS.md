@@ -30,9 +30,10 @@ required. Do not claim to have read unavailable notes or textbook chapters.
 
 ## Quiz and study material
 
-Provide 39 original syllabus MCQs, one per recorded topic, each with four distinct
+Provide 117 original syllabus MCQs, three per recorded topic, each with four distinct
 choices, one intended correct answer and an explanation. Allow selection from a
-module or all modules without repeated topics within an attempt. Shuffle questions
+module or all modules without repeated questions within an attempt. Cover different
+topics before revisiting one, and limit rendered attempts to 20 questions. Shuffle questions
 and choices. Clearly label them as original practice, not official exam questions.
 
 Keep topic explanations, intuition, ordered teaching steps, terminology, worked
@@ -43,6 +44,10 @@ Keep the working WordNet synonym and antonym quiz modes, word definitions,
 examples and related-word lookup. Do not use another valid retrieved relationship
 as a distractor. Include word sense context where available. Handle missing corpus
 and unknown-word cases clearly; never download data silently at startup.
+
+Keep vocabulary quiz generation bounded to a beginner-friendly word pool rather
+than scanning the whole corpus per attempt. Cache reusable lexical templates and
+lookup results without caching a fixed shuffled quiz or a missing-corpus error.
 
 ## Results and submission
 

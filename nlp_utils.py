@@ -3,10 +3,36 @@
 from __future__ import annotations
 
 import random
-from typing import Any, Callable, Iterable
+from functools import lru_cache
+from itertools import islice
+from typing import Any, Iterable
 
 from nltk.corpus import wordnet as wn
-from nltk.corpus.reader import WordNetCorpusReader
+
+# Beginner-friendly seeds bound the work: quiz generation never walks the full
+# production WordNet corpus. All answers still come from actual lexical data.
+QUIZ_WORDS = tuple("""happy sad glad angry calm quiet loud bright dark light heavy
+hot cold warm cool big small large little long short tall deep shallow wide narrow
+good bad kind cruel brave afraid strong weak rich poor clean dirty full empty
+early late fast slow young old new fresh stale easy hard simple difficult soft
+rough smooth sweet bitter wet dry open closed safe dangerous true false right
+wrong high low near far first last alive dead awake asleep busy idle active lazy
+beautiful ugly clever foolish honest dishonest polite rude patient curious
+clear cloudy modern ancient common rare generous selfish careful careless
+comfortable lonely friendly free healthy ill possible impossible useful useless
+accept reject agree disagree arrive depart begin end buy sell come go give take
+love hate laugh cry win lose remember forget rise fall include exclude
+build destroy push pull find search speak talk walk run read write learn teach
+help assist work play enjoy admire create make start finish increase decrease
+friend enemy child student teacher book home house car road water food bird dog cat
+answer question idea story word language meaning success failure peace war hope fear""".split())
+
+
+@lru_cache(maxsize=512)
+def _real_synsets(word: str) -> tuple:
+    # Lookup failures raise rather than being cached, so on-demand corpus setup
+    # can immediately recover without restarting the app.
+    return tuple(wn.synsets(word))
 
 
 def normalize_word(word: str) -> str:
@@ -16,7 +42,7 @@ def normalize_word(word: str) -> str:
 
 def _wordnet_available() -> bool:
     try:
-        wn.synsets("example")
+        _real_synsets("example")
         return True
     except LookupError:
         return False
@@ -31,12 +57,13 @@ def _synsets(word: str, corpus: Any = wn) -> list[Any]:
     normalized = normalize_word(word)
     if not normalized:
         return []
-    return corpus.synsets(normalized.replace(" ", "_"))
+    key = normalized.replace(" ", "_")
+    return _real_synsets(key) if corpus is wn else corpus.synsets(key)
 
 
 def get_synonyms(word: str, corpus: Any = wn) -> list[str]:
     """Retrieve distinct lemma names related to *word* by WordNet synsets."""
-    if not _wordnet_available() and corpus is wn:
+    if corpus is wn and not _wordnet_available():
         return []
     normalized = normalize_word(word)
     related = []
@@ -47,7 +74,7 @@ def get_synonyms(word: str, corpus: Any = wn) -> list[str]:
 
 def get_antonyms(word: str, corpus: Any = wn) -> list[str]:
     """Retrieve direct antonym lemma names recorded by WordNet."""
-    if not _wordnet_available() and corpus is wn:
+    if corpus is wn and not _wordnet_available():
         return []
     normalized = normalize_word(word)
     related = []
@@ -59,14 +86,14 @@ def get_antonyms(word: str, corpus: Any = wn) -> list[str]:
 
 def get_definitions(word: str, corpus: Any = wn) -> list[str]:
     """Retrieve distinct definitions from WordNet."""
-    if not _wordnet_available() and corpus is wn:
+    if corpus is wn and not _wordnet_available():
         return []
     return list(dict.fromkeys(synset.definition() for synset in _synsets(word, corpus)))
 
 
 def get_examples(word: str, corpus: Any = wn) -> list[str]:
     """Retrieve distinct example sentences from WordNet."""
-    if not _wordnet_available() and corpus is wn:
+    if corpus is wn and not _wordnet_available():
         return []
     examples = (example for synset in _synsets(word, corpus) for example in synset.examples())
     return list(dict.fromkeys(examples))
@@ -74,7 +101,7 @@ def get_examples(word: str, corpus: Any = wn) -> list[str]:
 
 def get_parts_of_speech(word: str, corpus: Any = wn) -> list[str]:
     """Retrieve the parts of speech represented by the word's synsets."""
-    if not _wordnet_available() and corpus is wn:
+    if corpus is wn and not _wordnet_available():
         return []
     return sorted({synset.pos() for synset in _synsets(word, corpus)})
 
@@ -82,7 +109,7 @@ def get_parts_of_speech(word: str, corpus: Any = wn) -> list[str]:
 def wordnet_status(corpus: Any = wn) -> tuple[bool, str]:
     """Return a user-friendly status for the local WordNet corpus."""
     try:
-        corpus.synsets("example")
+        _synsets("example", corpus)
     except LookupError:
         return False, "WordNet data is not installed. Run: python setup_nltk.py"
     return True, "WordNet is ready."
@@ -103,6 +130,25 @@ def _relationship_candidates(
     return []
 
 
+@lru_cache(maxsize=2)
+def _real_question_pool(quiz_type):
+    """Cache immutable lexical templates, never a user's shuffled quiz."""
+    templates = []
+    retrieve = get_synonyms if quiz_type == "synonym" else get_antonyms
+    for word in QUIZ_WORDS:
+        related = frozenset(retrieve(word, wn))
+        if not related:
+            continue
+        for synset in _synsets(word, wn):
+            lemmas = _unique_sorted(lemma.name() for lemma in synset.lemmas())
+            if word not in lemmas:
+                continue
+            answers = tuple(answer for answer in _unique_sorted(_relationship_candidates(quiz_type, synset)) if answer != word)
+            if answers:
+                templates.append((word, synset.definition(), answers, related))
+    return tuple(templates)
+
+
 def generate_quiz_questions(
     quiz_type: str,
     num_questions: int = 5,
@@ -115,57 +161,52 @@ def generate_quiz_questions(
     Each question contains ``word``, ``question``, ``options``, and ``answer``.
     The optional corpus and random generator make the function easy to test.
     """
-    if quiz_type not in {"synonym", "antonym"} or num_questions <= 0:
+    if quiz_type not in {"synonym", "antonym"} or num_questions <= 0 or max_options < 2:
         return []
     if corpus is wn and not _wordnet_available():
         return []
     randomizer = rng or random.Random()
     questions: list[dict[str, Any]] = []
     used_words: set[str] = set()
-    all_synsets = list(corpus.all_synsets())
-    randomizer.shuffle(all_synsets)
+    if corpus is wn:
+        templates = list(_real_question_pool(quiz_type))
+        vocabulary = list(QUIZ_WORDS)
+    else:
+        # Injected/custom corpora have a bounded scan too. This path remains
+        # deterministic under the supplied RNG and easy to test without data.
+        synsets = list(islice(corpus.all_synsets(), 2000))
+        vocabulary = _unique_sorted(lemma.name() for synset in synsets for lemma in synset.lemmas())
+        templates = []
+        for synset in synsets:
+            lemmas = _unique_sorted(lemma.name() for lemma in synset.lemmas())
+            if not lemmas:
+                continue
+            word = lemmas[0]
+            answers = tuple(answer for answer in _unique_sorted(_relationship_candidates(quiz_type, synset)) if answer != word)
+            related = frozenset(get_synonyms(word, corpus) if quiz_type == "synonym" else get_antonyms(word, corpus))
+            if answers:
+                templates.append((word, synset.definition(), answers, related))
+    randomizer.shuffle(templates)
 
-    for source_synset in all_synsets:
+    for source_word, definition, correct_candidates, related in templates:
         if len(questions) >= num_questions:
             break
-        source_lemmas = _unique_sorted(lemma.name() for lemma in source_synset.lemmas())
-        if not source_lemmas:
+        if source_word in used_words:
             continue
-        source_word = source_lemmas[0]
-        correct_candidates = _unique_sorted(_relationship_candidates(quiz_type, source_synset))
-        correct_candidates = [item for item in correct_candidates if item != source_word]
-        if not correct_candidates or source_word in used_words:
-            continue
-        answer = correct_candidates[0]
-
-        # Avoid using another valid relationship as a supposedly wrong option,
-        # including relationships belonging to other senses of the source word.
-        related = set(get_synonyms(source_word, corpus) if quiz_type == "synonym"
-                      else get_antonyms(source_word, corpus))
-
-        distractors: list[str] = []
-        for candidate_synset in all_synsets:
-            candidate_words = _unique_sorted(
-                lemma.name() for lemma in candidate_synset.lemmas()
-            )
-            for candidate in candidate_words:
-                if candidate not in {source_word, answer} and candidate not in related and candidate not in distractors:
-                    distractors.append(candidate)
-                if len(distractors) >= max_options - 1:
-                    break
-            if len(distractors) >= max_options - 1:
-                break
-        options = _unique_sorted([answer, *distractors])[:max_options]
-        if answer not in options or len(options) < 2:
+        answer = randomizer.choice(correct_candidates)
+        eligible = [candidate for candidate in vocabulary if candidate not in {source_word, answer} and candidate not in related]
+        distractors = randomizer.sample(eligible, min(max_options - 1, len(eligible)))
+        options = [answer, *distractors]
+        if len(options) < 2:
             continue
         randomizer.shuffle(options)
         questions.append(
             {
                 "word": source_word,
-                "question": f"Which word is a {quiz_type} of '{source_word}' (sense: {source_synset.definition()})?",
+                "question": f"Which word is a {quiz_type} of '{source_word}' (sense: {definition})?",
                 "options": options,
                 "answer": answer,
-                "explanation": f"WordNet records '{answer}' as a {quiz_type} for this sense of '{source_word}': {source_synset.definition()}.",
+                "explanation": f"WordNet records '{answer}' as a {quiz_type} for this sense of '{source_word}': {definition}.",
             }
         )
         used_words.add(source_word)

@@ -1,6 +1,49 @@
-# Verification — 30 October 2026
+# Verification — updated 31 October 2026
 
-## Submission simplification
+## Current result: optimization and question expansion
+
+**47 tests passed in 8.92 seconds**, exit code 0, outside the sandbox. The
+sandboxed UI runs were interrupted after a diagnostic traceback showed Windows
+asyncio waiting in its local socket-pair setup before executing the app. The
+unsandboxed run passed without the earlier temporary-directory cleanup error.
+
+The bank now has **117 unique original questions**, three for each of the 39
+unchanged syllabus topics. Module totals are 33, 36, 18, 18 and 12. Added
+conceptual, terminology, algorithm and worked-calculation questions. Tests check
+four distinct choices, answer membership, topic coverage, question uniqueness,
+filtering, and independently calculated numerical answer keys. Short attempts
+cover different topics before revisiting one. These are not official exam items.
+
+A regression test also confirms that a running app can recover from the old
+cached question-bank module when importing the new question-count helper.
+
+Removed the full-corpus WordNet scan and shuffle. A bounded common-word pool
+supplies real lexical senses; immutable templates are cached for two quiz modes,
+and synset lookups have a 512-entry cache. Each quiz is still freshly shuffled.
+The custom test-corpus path also has a bounded scan. Regression tests prohibit
+full production-corpus enumeration and confirm reuse without mutable-option leaks.
+Word Explorer now uses a submit form and a bounded 256-entry result cache.
+Missing corpus errors are not permanently cached. The syllabus bank compiles
+once; pages render at most 20 questions, and results initially show incorrect
+answers with an optional full-review toggle.
+
+Measured with perf_counter around generation calls in fresh Python processes,
+excluding imports, using the installed local corpus:
+
+| Operation | Before | After |
+| --- | --- | --- |
+| First five-question synonym quiz | 11.824 s | 2.7781 s |
+| Following five-question antonym quiz | 0.863 s | 0.0368 s |
+| Repeated 15-question synonym quiz | Not recorded | 0.0027 s |
+
+These individual local measurements do not guarantee cloud latency. First use
+still loads WordNet; server wake-up time is outside these timings. Vocabulary
+quizzes use a beginner-friendly subset; Word Explorer still supports arbitrary
+words in the full installed corpus. The network-blocked offline check passed
+with 117 questions, scoring, 39 guides, word lookups and both quiz generators.
+No new live browser visual or network-latency tests were performed.
+
+## Original submission simplification (30 October)
 
 Replaced the twelve-page dashboard with five focused screens: Take a Quiz,
 Study & Revise, Syllabus, Word Explorer and My Results. The app opens on quiz
@@ -30,7 +73,7 @@ to describe the simplified application.
 
 Command: `.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider`.
 
-Latest result: **41 passed in 8.05 seconds**. Tests for the
+Latest result before the October 31 performance update: **41 passed in 8.05 seconds**. Tests for the
 removed dashboard were replaced with tests for the new quiz workflow.
 
 Coverage includes:
